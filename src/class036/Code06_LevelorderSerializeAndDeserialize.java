@@ -1,5 +1,8 @@
 package class036;
 
+import java.util.LinkedList;
+import java.util.Queue;
+
 // 二叉树按层序列化和反序列化
 // 测试链接 : https://leetcode.cn/problems/serialize-and-deserialize-binary-tree/
 public class Code06_LevelorderSerializeAndDeserialize {
@@ -19,30 +22,24 @@ public class Code06_LevelorderSerializeAndDeserialize {
 	// 按层序列化
 	public class Codec {
 
-		public static int MAXN = 10001;
-
-		public static TreeNode[] queue = new TreeNode[MAXN];
-
-		public static int l, r;
-
 		public String serialize(TreeNode root) {
 			StringBuilder builder = new StringBuilder();
 			if (root != null) {
 				builder.append(root.val + ",");
-				l = 0;
-				r = 0;
-				queue[r++] = root;
-				while (l < r) {
-					root = queue[l++];
+				// 修改了课上代码，改用自带的队列结构
+				Queue<TreeNode> que = new LinkedList<>();
+				que.offer(root);
+				while (!que.isEmpty()) {
+					root = que.poll();
 					if (root.left != null) {
 						builder.append(root.left.val + ",");
-						queue[r++] = root.left;
+						que.offer(root.left);
 					} else {
 						builder.append("#,");
 					}
 					if (root.right != null) {
 						builder.append(root.right.val + ",");
-						queue[r++] = root.right;
+						que.offer(root.right);
 					} else {
 						builder.append("#,");
 					}
@@ -58,18 +55,18 @@ public class Code06_LevelorderSerializeAndDeserialize {
 			String[] nodes = data.split(",");
 			int index = 0;
 			TreeNode root = generate(nodes[index++]);
-			l = 0;
-			r = 0;
-			queue[r++] = root;
-			while (l < r) {
-				TreeNode cur = queue[l++];
+			// 修改了课上代码，改用自带的队列结构
+			Queue<TreeNode> que = new LinkedList<>();
+			que.offer(root);
+			while (!que.isEmpty()) {
+				TreeNode cur = que.poll();
 				cur.left = generate(nodes[index++]);
 				cur.right = generate(nodes[index++]);
 				if (cur.left != null) {
-					queue[r++] = cur.left;
+					que.offer(cur.left);
 				}
 				if (cur.right != null) {
-					queue[r++] = cur.right;
+					que.offer(cur.right);
 				}
 			}
 			return root;
