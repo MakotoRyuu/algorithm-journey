@@ -1,6 +1,12 @@
 package class208;
 
 // Edmonds-Karp算法，java版
+// 图中一共n个点，m条有向边，给定源点s和汇点t
+// 给定每条有向边的起点、终点、容量
+// 计算源点s到汇点t的网络最大流
+// 1 <= n <= 200
+// 1 <= m <= 5000
+// 边的容量为非负整数
 // 测试链接 : https://www.luogu.com.cn/problem/P3376
 // 提交以下的code，提交时请把类名改成"Main"，可以通过所有测试用例
 
@@ -14,7 +20,7 @@ public class Code01_EdmondsKarp1 {
 
 	public static int MAXN = 201;
 	public static int MAXM = 5001;
-	public static int INF = 1000000001;
+	public static long INF = 1L << 60;
 	public static int n, m;
 
 	public static int[] head = new int[MAXN];
@@ -41,15 +47,15 @@ public class Code01_EdmondsKarp1 {
 		que[++r] = s;
 		while (l <= r) {
 			int u = que[l++];
-			if (u == t) {
-				break;
-			}
 			for (int e = head[u]; e > 0; e = nxt[e]) {
 				int v = to[e];
 				int lim = limit[e];
 				if (lim > 0 && flow[v] == -1) {
 					flow[v] = Math.min(flow[u], lim);
 					pre[v] = e;
+					if (v == t) {
+						return;
+					}
 					que[++r] = v;
 				}
 			}

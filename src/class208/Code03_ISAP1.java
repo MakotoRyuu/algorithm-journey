@@ -1,7 +1,13 @@
 package class208;
 
 // ISAP算法，java版
-// 测试链接：https://www.luogu.com.cn/problem/P3376
+// 图中一共n个点，m条有向边，给定源点s和汇点t
+// 给定每条有向边的起点、终点、容量
+// 计算源点s到汇点t的网络最大流
+// 1 <= n <= 200
+// 1 <= m <= 5000
+// 边的容量为非负整数
+// 测试链接 : https://www.luogu.com.cn/problem/P3376
 // 提交以下的code，提交时请把类名改成"Main"，可以通过所有测试用例
 
 import java.io.IOException;
@@ -13,7 +19,7 @@ public class Code03_ISAP1 {
 
 	public static int MAXN = 201;
 	public static int MAXM = 5001;
-	public static int INF = 1000000001;
+	public static long INF = 1L << 60;
 	public static int n, m;
 
 	public static int[] head = new int[MAXN];
@@ -34,7 +40,7 @@ public class Code03_ISAP1 {
 		head[u] = cntg;
 	}
 
-	public static void bfs(int s, int t) {
+	public static void bfs(int t) {
 		gap[0] = 0;
 		for (int i = 1; i <= n; i++) {
 			gap[i] = 0;
@@ -48,8 +54,7 @@ public class Code03_ISAP1 {
 			int u = que[l++];
 			for (int e = head[u]; e > 0; e = nxt[e]) {
 				int v = to[e];
-				int lim = limit[e ^ 1];
-				if (dis[v] == n && lim > 0) {
+				if (dis[v] == n && limit[e ^ 1] > 0) {
 					dis[v] = dis[u] + 1;
 					que[++r] = v;
 				}
@@ -68,9 +73,9 @@ public class Code03_ISAP1 {
 		for (int e = cur[u]; e > 0 && rest > 0; e = nxt[e]) {
 			cur[u] = e;
 			int v = to[e];
-			long c = Math.min(rest, limit[e]);
-			if (dis[u] == dis[v] + 1 && c > 0) {
-				long k = dfs(v, c, s, t);
+			int lim = limit[e];
+			if (dis[u] == dis[v] + 1 && lim > 0) {
+				long k = dfs(v, Math.min(rest, lim), s, t);
 				flow += k;
 				rest -= k;
 				limit[e] -= k;
@@ -82,7 +87,22 @@ public class Code03_ISAP1 {
 		}
 		if (rest > 0) {
 			if (--gap[dis[u]] > 0) {
-				dis[u]++;
+				int lowest = n - 1;
+				for (int e = head[u]; e > 0; e = nxt[e]) {
+					int v = to[e];
+					if (u != v && limit[e] > 0) {
+						lowest = Math.min(lowest, dis[v]);
+					}
+				}
+				// 隐蔽的坑点
+				// 非源点u在dfs中，有父节点，父节点标号为dis[u]+1
+				// 如果flow > 0，那么dfs返回后，才会增加u指向父节点的剩余容量
+				// 调整剩余容量是回到父节点之后才完成的，所以此时重标号，需要考虑这种情况
+				// 防止可用节点，没有考虑父节点的情况
+				if (u != s && flow > 0) {
+					lowest = Math.min(lowest, dis[u] + 1);
+				}
+				dis[u] = lowest + 1;
 				gap[dis[u]]++;
 				cur[u] = head[u];
 			} else {
@@ -94,7 +114,7 @@ public class Code03_ISAP1 {
 
 	public static long maxflow(int s, int t) {
 		long ans = 0;
-		bfs(s, t);
+		bfs(t);
 		while (dis[s] != n) {
 			ans += dfs(s, INF, s, t);
 		}

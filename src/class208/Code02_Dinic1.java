@@ -1,6 +1,12 @@
 package class208;
 
 // Dinic算法，java版
+// 图中一共n个点，m条有向边，给定源点s和汇点t
+// 给定每条有向边的起点、终点、容量
+// 计算源点s到汇点t的网络最大流
+// 1 <= n <= 200
+// 1 <= m <= 5000
+// 边的容量为非负整数
 // 测试链接 : https://www.luogu.com.cn/problem/P3376
 // 提交以下的code，提交时请把类名改成"Main"，可以通过所有测试用例
 
@@ -13,7 +19,7 @@ public class Code02_Dinic1 {
 
 	public static int MAXN = 201;
 	public static int MAXM = 5001;
-	public static int INF = 1000000001;
+	public static long INF = 1L << 60;
 	public static int n, m;
 
 	public static int[] head = new int[MAXN];
@@ -33,7 +39,7 @@ public class Code02_Dinic1 {
 		head[u] = cntg;
 	}
 
-	public static void bfs(int s, int t) {
+	public static void bfs(int s) {
 		for (int i = 1; i <= n; i++) {
 			dis[i] = n;
 			cur[i] = head[i];
@@ -62,28 +68,24 @@ public class Code02_Dinic1 {
 		for (int e = cur[u]; e > 0 && rest > 0; e = nxt[e]) {
 			cur[u] = e;
 			int v = to[e];
-			long c = Math.min(rest, limit[e]);
-			if (dis[u] + 1 == dis[v] && c > 0) {
-				long k = dfs(v, c, t);
+			int lim = limit[e];
+			if (dis[u] + 1 == dis[v] && lim > 0) {
+				long k = dfs(v, Math.min(rest, lim), t);
 				flow += k;
 				rest -= k;
 				limit[e] -= k;
 				limit[e ^ 1] += k;
 			}
 		}
-		// 死点剪枝
-		if (flow == 0) {
-			dis[u] = n;
-		}
 		return flow;
 	}
 
 	public static long maxflow(int s, int t) {
 		long ans = 0;
-		bfs(s, t);
+		bfs(s);
 		while (dis[t] != n) {
 			ans += dfs(s, INF, t);
-			bfs(s, t);
+			bfs(s);
 		}
 		return ans;
 	}

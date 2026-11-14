@@ -1,7 +1,13 @@
 package class208;
 
 // HLPP算法，java版
-// 测试链接：https://www.luogu.com.cn/problem/P4722
+// 图中一共n个点，m条有向边，给定源点s和汇点t
+// 给定每条有向边的起点、终点、容量
+// 计算源点s到汇点t的网络最大流
+// 1 <= n <= 1200
+// 1 <= m <= 120000
+// 边的容量为非负整数
+// 测试链接 : https://www.luogu.com.cn/problem/P4722
 // 提交以下的code，提交时请把类名改成"Main"，可以通过所有测试用例
 
 import java.io.IOException;
@@ -51,7 +57,7 @@ public class Code04_HLPP1 {
 		limit[e ^ 1] += k;
 	}
 
-	public static void bfs(int s, int t) {
+	public static void bfs(int t) {
 		for (int i = 1; i <= n; i++) {
 			dis[i] = n + 1;
 			cur[i] = head[i];
@@ -63,8 +69,7 @@ public class Code04_HLPP1 {
 			int u = que[l++];
 			for (int e = head[u]; e > 0; e = nxt[e]) {
 				int v = to[e];
-				int lim = limit[e ^ 1];
-				if (dis[v] == n + 1 && lim > 0) {
+				if (dis[v] == n + 1 && limit[e ^ 1] > 0) {
 					dis[v] = dis[u] + 1;
 					que[++r] = v;
 				}
@@ -72,7 +77,77 @@ public class Code04_HLPP1 {
 		}
 	}
 
-	public static void rebuild(int s, int t) {
+	public static void relabel(int u) {
+		int h = dis[u];
+		if (gap[h] == 1) {
+			// 出现计数从1到0，必是向汇点推流的阶段
+			// 触发gap优化，标号在[h, n-1]的所有点，改标号为n+1
+			// 这些点一定包含u，但是一定不包含源点和汇点
+			for (int i = 1; i <= n; i++) {
+				if (dis[i] >= h && dis[i] < n) {
+					gap[dis[i]]--;
+					dis[i] = n + 1;
+					gap[dis[i]]++;
+					cur[i] = head[i];
+				}
+			}
+		} else {
+			// 没有出现旧标号层的计数从1变为0，那么提升u的标号即可
+			// 新标号 = 可用邻居的最小标号 + 1
+			int lowest = (n << 1) - 1;
+			for (int e = head[u]; e > 0; e = nxt[e]) {
+				int v = to[e];
+				if (u != v && limit[e] > 0) {
+					lowest = Math.min(lowest, dis[v]);
+				}
+			}
+			gap[h]--;
+			dis[u] = lowest + 1;
+			gap[dis[u]]++;
+			cur[u] = head[u];
+		}
+	}
+
+	public static void discharge(int s, int t) {
+		int u = bucket[highest];
+		bucket[highest] = nextActive[u];
+		int e = cur[u];
+		while (excess[u] > 0) {
+			cur[u] = e;
+			if (e > 0) {
+				// 有边可用继续尝试
+				int v = to[e];
+				int lim = limit[e];
+				if (dis[u] == dis[v] + 1 && lim > 0) {
+					if (v != s && v != t && excess[v] == 0) {
+						addActive(v);
+					}
+					pushFlow(u, v, e, Math.min(excess[u], lim));
+				}
+				e = nxt[e];
+			} else {
+				// 无边可用提高标号
+				relabel(u);
+				e = cur[u];
+			}
+		}
+	}
+
+	public static long maxflow(int s, int t) {
+		bfs(t);
+		if (dis[s] == n + 1) {
+			return 0;
+		}
+		dis[s] = n;
+		for (int i = 1; i <= n; i++) {
+			gap[dis[i]]++;
+		}
+		for (int e = head[s]; e > 0; e = nxt[e]) {
+			int v = to[e];
+			if (dis[v] < n) {
+				pushFlow(s, v, e, limit[e]);
+			}
+		}
 		for (int i = 0; i <= n << 1; i++) {
 			bucket[i] = 0;
 		}
@@ -82,70 +157,6 @@ public class Code04_HLPP1 {
 				addActive(i);
 			}
 		}
-	}
-
-	public static void relabel(int u, int s, int t) {
-		if (dis[u] < n && gap[dis[u]] == 1) {
-			int h = dis[u];
-			for (int i = 1; i <= n; i++) {
-				if (i != s && i != t && dis[i] >= h && dis[i] < n) {
-					gap[dis[i]]--;
-					dis[i] = n + 1;
-					gap[dis[i]]++;
-					cur[i] = head[i];
-				}
-			}
-			rebuild(s, t);
-		} else {
-			int lowest = (n << 1) - 1;
-			for (int e = head[u]; e > 0; e = nxt[e]) {
-				int v = to[e];
-				int lim = limit[e];
-				if (u != v && lim > 0) {
-					lowest = Math.min(lowest, dis[v]);
-				}
-			}
-			gap[dis[u]]--;
-			dis[u] = lowest + 1;
-			gap[dis[u]]++;
-			cur[u] = head[u];
-			addActive(u);
-		}
-	}
-
-	public static void discharge(int s, int t) {
-		int u = bucket[highest];
-		bucket[highest] = nextActive[u];
-		for (int e = cur[u]; e > 0; e = nxt[e]) {
-			cur[u] = e;
-			int v = to[e];
-			int lim = limit[e];
-			if (dis[u] == dis[v] + 1 && lim > 0) {
-				if (v != s && v != t && excess[v] == 0) {
-					addActive(v);
-				}
-				pushFlow(u, v, e, Math.min(excess[u], lim));
-				if (excess[u] == 0) {
-					return;
-				}
-			}
-		}
-		relabel(u, s, t);
-	}
-
-	public static long maxflow(int s, int t) {
-		bfs(s, t);
-		if (dis[s] == n + 1) {
-			return 0;
-		}
-		dis[s] = n;
-		for (int i = 1; i <= n; i++) {
-			gap[dis[i]]++;
-		}
-		for (int e = head[s]; e > 0; e = nxt[e]) {
-			pushFlow(s, to[e], e, limit[e]);
-		}
-		rebuild(s, t);
 		while (highest >= 0) {
 			if (bucket[highest] == 0) {
 				highest--;
